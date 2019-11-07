@@ -15,21 +15,18 @@ def main():
     old_settings = termios.tcgetattr(fd)
     tty.setraw(sys.stdin)
 
-    csi('s')
     while True:
-        csi('u')
-        csi('J')
-        sys.stdout.write(buffer[0] + '\r\n')
-        sys.stdout.write(buffer[1] + '\r\n')
+        sys.stdout.write(buffer[0] + '\r\n' + buffer[1] + '\r\n')
 
         char = sys.stdin.read(1)
         if ord(char) == 17:
             break
 
+        csi('2A')
+        csi('J')
+
         buffer[0], buffer[1] = buffer[1], str(ord(char))
 
-    csi('u')
-    csi('J')
     termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
 

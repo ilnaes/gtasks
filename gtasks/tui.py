@@ -1,34 +1,81 @@
 import sys
 import tty
 import termios
-
-
-buffer = ['0', '0']
+import threading
+from eventbox import EventBox
 
 
 def csi(s):
     sys.stdout.write('\x1b['+s)
 
 
-def main():
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    tty.setraw(sys.stdin)
+class Terminal:
+    KILL = 1
+    KEYPRESS = 2
+    HEIGHT = 10
 
-    while True:
-        sys.stdout.write(buffer[0] + '\r\n' + buffer[1] + '\r\n')
+    def __init__(self, eventbox):
+        self.local_events = EventBox()
+        self.global_events = eventbox
+        self.text = []
+        self.cy = 0
+        self.cx = 0
+        self.input = ''
+        self.lock = threading.Lock()
+        self.alive = True
 
-        char = sys.stdin.read(1)
-        if ord(char) == 17:
-            break
+        self.fd = sys.stdin.fileno()
+        self.old_settings = termios.tcgetattr(self.fd)
+        tty.setraw(sys.stdin)
+        csi('s')
 
-        csi('2A')
+    def kill(self):
+        with self.lock:
+            termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
+            self.clear()
+            self.alive = False
+
+    def clear(self):
+        csi('u')
         csi('J')
 
-        buffer[0], buffer[1] = buffer[1], str(ord(char))
+    def print_text(self):
+        for i in range(Terminal.HEIGHT):
+            if self.cy + i < len(self.text):
+                sys.stdout.write(self.text[self.cy+i] + '\r\n')
 
-    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        for i in range(self.cy + Terminal.HEIGHT - len(self.text)):
+            sys.stdout.write('\r\n')
 
+    def drawloop(self):
+        def _callback(events):
+            while events:
+                e, v = events.pop()
 
-if __name__ == '__main__':
-    main()
+                with self.lock:
+                    if self.alive:
+                        if e == Terminal.KEYPRESS:
+                            self.text.append(str(v))
+                            if len(self.text) > Terminal.HEIGHT:
+                                self.cy += 1
+
+                            self.clear()
+                            self.print_text()
+
+        def _loop():
+            self.print_text()
+
+            while True:
+                self.local_events.wait(_callback)
+
+        threading.Thread(target=_loop, daemon=True).start()
+
+    def loop(self):
+        self.drawloop()
+
+        def _loop():
+            while True:
+                ch = sys.stdin.read(1)
+                self.global_events.set((Terminal.KEYPRESS, ord(ch)))
+
+        threading.Thread(target=_loop, daemon=True).start()

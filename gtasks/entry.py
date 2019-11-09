@@ -1,4 +1,4 @@
-from eventbox import EventBox
+from queue import Queue
 from tui import Terminal
 from api import Connection
 
@@ -7,42 +7,40 @@ def parse_state(state):
     return [x[0] for x in state]
 
 
-def run():
-    eb = EventBox()
-    terminal = Terminal(eb)
-    connexion = Connection(eb)
+class GTasks:
+    def __init__(self):
+        self.alive = True
+        self.q = Queue()
+        self.terminal = Terminal(self.q)
+        self.connexion = Connection(self.q)
 
-    connexion.get_lists()
-    terminal.loop()
-    alive = True
+        self.connexion.get_lists()
+        self.terminal.loop()
 
-    state = []
+        self.state = []
 
-    def _callback(events):
-        nonlocal alive, state
+    def process_events(self, event):
+        e, v = event
+        if e == 'ITEMS':
+            self.state += v
+            self.terminal.set_text(parse_state(self.state))
+        elif e == Terminal.KEYPRESS:
+            if v == 3:
+                self.alive = False
+                self.terminal.kill()
+            elif v == 10:
+                self.terminal.scroll_cursor(1)
+            elif v == 11:
+                self.terminal.scroll_cursor(-1)
+            else:
+                self.state = [str(v)]
+                self.terminal.set_text(self.state)
 
-        while events:
-            e, v = events.pop()
-            if e == 'ITEMS':
-                state += v
-                terminal.set_text(parse_state(state))
-            elif e == Terminal.KEYPRESS:
-                if v == 3:
-                    alive = False
-                    terminal.kill()
-                elif v == 10:
-                    # down
-                    terminal.scroll_cursor(1)
-                elif v == 11:
-                    # up
-                    terminal.scroll_cursor(-1)
-                else:
-                    state = [str(v)]
-                    terminal.set_text(state)
-
-    while alive:
-        eb.wait(_callback)
+    def run(self):
+        while self.alive:
+            self.process_events(self.q.get())
 
 
 if __name__ == '__main__':
-    run()
+    app = GTasks()
+    app.run()

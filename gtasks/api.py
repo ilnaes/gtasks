@@ -13,8 +13,8 @@ class Connection:
     SCOPES = ['https://www.googleapis.com/auth/tasks']
     FORMAT = "%Y-%m-%dT%H:%M"
 
-    def __init__(self, eventbox):
-        self.global_events = eventbox
+    def __init__(self, q):
+        self.global_events = q
 
         creds = None
         # The file token.pickle stores the user's access and refresh tokens, and is
@@ -40,7 +40,7 @@ class Connection:
     def get_lists(self):
         results = self.service.tasklists().list(maxResults=10).execute()
         items = results.get('items', [])
-        self.global_events.set(('ITEMS',
+        self.global_events.put(('ITEMS',
                                 [(x['title'], x['id']) for x in items]))
 
     def list_tasks():

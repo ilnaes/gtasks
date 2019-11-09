@@ -15,9 +15,9 @@ class Terminal:
     REFRESH = 3
     HEIGHT = 10
 
-    def __init__(self, eventbox):
+    def __init__(self, q):
         # self.local_events = EventBox()
-        self.global_events = eventbox
+        self.global_events = q
         self.text = ['Loading...']
         self.top = 0
         self.cursor = 0
@@ -81,7 +81,7 @@ class Terminal:
         def _loop():
             while True:
                 ch = sys.stdin.read(1)
-                self.global_events.set((Terminal.KEYPRESS, ord(ch)))
+                self.global_events.put((Terminal.KEYPRESS, ord(ch)))
 
         threading.Thread(target=_loop, daemon=True).start()
 

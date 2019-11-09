@@ -40,7 +40,8 @@ class Connection:
     def get_lists(self):
         results = self.service.tasklists().list(maxResults=10).execute()
         items = results.get('items', [])
-        self.global_events.set(('ITEMS', [x['title'] for x in items]))
+        self.global_events.set(('ITEMS',
+                                [(x['title'], x['id']) for x in items]))
 
     def list_tasks():
         # Call the Tasks API

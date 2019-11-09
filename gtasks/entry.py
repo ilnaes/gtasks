@@ -3,6 +3,10 @@ from tui import Terminal
 from api import Connection
 
 
+def parse_state(state):
+    return [x[0] for x in state]
+
+
 def run():
     eb = EventBox()
     terminal = Terminal(eb)
@@ -15,12 +19,13 @@ def run():
     state = []
 
     def _callback(events):
-        nonlocal alive
+        nonlocal alive, state
 
         while events:
             e, v = events.pop()
             if e == 'ITEMS':
-                terminal.set_text(v)
+                state += v
+                terminal.set_text(parse_state(state))
             elif e == Terminal.KEYPRESS:
                 if v == 3:
                     alive = False
@@ -32,10 +37,8 @@ def run():
                     # up
                     terminal.scroll_cursor(-1)
                 else:
-                    state.append(str(v))
+                    state = [str(v)]
                     terminal.set_text(state)
-                    if len(state) > Terminal.HEIGHT:
-                        terminal.scroll(1)
 
     while alive:
         eb.wait(_callback)

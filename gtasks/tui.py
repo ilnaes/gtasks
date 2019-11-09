@@ -1,8 +1,8 @@
+import string
 import sys
 import tty
 import termios
 import threading
-# from eventbox import EventBox
 
 
 def csi(s):
@@ -10,13 +10,10 @@ def csi(s):
 
 
 class Terminal:
-    KILL = 1
     KEYPRESS = 2
-    REFRESH = 3
-    HEIGHT = 10
+    HEIGHT = 5
 
     def __init__(self, q):
-        # self.local_events = EventBox()
         self.global_events = q
         self.text = []
         self.top = 0
@@ -29,8 +26,31 @@ class Terminal:
         self.fd = sys.stdin.fileno()
         self.old_settings = termios.tcgetattr(self.fd)
         tty.setraw(sys.stdin)
-        csi('s')
+        # csi('s')
         csi('?25l')
+
+    def get_prompt(self, s, q):
+        self.prompt = s
+        self.input = ''
+        self.refresh()
+
+        while True:
+            e, v = q.get()
+            if e == Terminal.KEYPRESS:
+                if v == 3:
+                    self.input = ''
+                    self.prompt = ''
+                    self.refresh()
+                    return None
+                elif v == 13:
+                    tmp = self.input
+                    self.input = ''
+                    self.prompt = ''
+                    self.refresh()
+                    return tmp
+                elif chr(v) in string.printable:
+                    self.input += chr(v)
+                    self.refresh()
 
     def kill(self):
         with self.lock:
@@ -40,12 +60,17 @@ class Terminal:
             self.alive = False
 
     def clear(self):
-        csi('u')
+        csi(str(Terminal.HEIGHT + 1) + 'A')
+        csi('G')
         csi('J')
 
     def scroll_cursor(self, n):
         with self.lock:
             self.cursor += n
+            if self.top + Terminal.HEIGHT <= self.cursor:
+                self.top = self.cursor - Terminal.HEIGHT + 1
+            elif self.top > self.cursor:
+                self.top = self.cursor
         self.refresh()
 
     def print_text(self):
@@ -82,7 +107,7 @@ class Terminal:
         with self.lock:
             if self.top + n < len(self.text) and self.top + n >= 0:
                 self.top += n
-                self.refresh()
+        self.refresh()
 
     def loop(self):
         # self.drawloop()

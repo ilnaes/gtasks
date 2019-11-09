@@ -4,27 +4,6 @@ from tui import Terminal
 from api import Connection
 
 
-def parse_state(state):
-    res = []
-    now = dt.datetime.now()
-
-    for t, _, l in state:
-        if l is None:
-            res.append('+ ' + t)
-        else:
-            res.append('- ' + t)
-            for y, _, d in l:
-                dfmt = d.strftime('%m/%d/%Y')
-
-                if d < now:
-                    res.append(u'  \033[31m{0} -- {1}\033[0m'.format(dfmt, y))
-                else:
-                    res.append(u'  \033[32m{0} -- {1}\033[0m'.format(dfmt, y))
-                # res.append('  ' + y)
-
-    return res
-
-
 class GTasks:
     def __init__(self):
         self.alive = True
@@ -37,6 +16,28 @@ class GTasks:
         self.terminal.loop()
 
         self.state = []
+
+    def parse_state(self):
+        res = []
+        now = dt.datetime.now()
+
+        for t, _, l in self.state:
+            if l is None:
+                res.append('+ ' + t)
+            else:
+                res.append('- ' + t)
+                for y, _, d in l:
+                    dfmt = d.strftime('%m/%d/%Y')
+
+                    if d < now:
+                        line = u'  \033[31m{0} -- {1}\033[0m'.format(dfmt, y)
+                    else:
+                        line = u'  \033[32m{0} -- {1}\033[0m'.format(dfmt, y)
+
+                    res.append(line)
+                    # res.append('  ' + y)
+
+        return res
 
     def scroll_cursor(self, n):
         if self.cursor + n >= 0 and self.cursor + n < self.get_length():
@@ -71,7 +72,7 @@ class GTasks:
                 self.connexion.get_tasks(item[1])
             else:
                 item[2] = None
-                self.terminal.set_text(parse_state(self.state))
+                self.terminal.set_text(self.parse_state())
         else:
             self.terminal.input = item[0]
             self.terminal.refresh()
@@ -80,14 +81,14 @@ class GTasks:
         e, v = event
         if e == 'LISTS':
             self.state = v
-            self.terminal.set_text(parse_state(self.state))
+            self.terminal.set_text(self.parse_state())
         elif e == 'TASKS':
             for l in self.state:
                 if l[1] == v[0]:
                     l[2] = v[1]
-            self.terminal.set_text(parse_state(self.state))
+            self.terminal.set_text(self.parse_state())
         elif e == Terminal.KEYPRESS:
-            if v == 3:
+            if v == 3 or v == 113:
                 self.alive = False
                 self.terminal.kill()
             elif v == 10:
@@ -96,6 +97,10 @@ class GTasks:
                 self.scroll_cursor(-1)
             elif v == 32:
                 self.toggle_list()
+            elif v == 97:
+                a = self.terminal.get_prompt("Input title: ", self.q)
+                if a is not None:
+                    self.terminal.set_input(a)
             else:
                 self.terminal.set_input(str(v))
 

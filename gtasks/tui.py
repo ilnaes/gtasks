@@ -2,7 +2,7 @@ import sys
 import tty
 import termios
 import threading
-from eventbox import EventBox
+# from eventbox import EventBox
 
 
 def csi(s):
@@ -12,14 +12,15 @@ def csi(s):
 class Terminal:
     KILL = 1
     KEYPRESS = 2
+    REFRESH = 3
     HEIGHT = 10
 
     def __init__(self, eventbox):
-        self.local_events = EventBox()
+        # self.local_events = EventBox()
         self.global_events = eventbox
-        self.text = []
-        self.cy = 0
-        self.cx = 0
+        self.text = ['Loading...']
+        self.top = 0
+        self.cursor = 0
         self.input = ''
         self.lock = threading.Lock()
         self.alive = True
@@ -39,13 +40,50 @@ class Terminal:
         csi('u')
         csi('J')
 
-    def print_text(self):
-        for i in range(Terminal.HEIGHT):
-            if self.cy + i < len(self.text):
-                sys.stdout.write(self.text[self.cy+i] + '\r\n')
+    def scroll_cursor(self, n):
+        with self.lock:
+            self.cursor += n
+        self.refresh()
 
-        for i in range(self.cy + Terminal.HEIGHT - len(self.text)):
-            sys.stdout.write('\r\n')
+    def print_text(self):
+        with self.lock:
+            for i in range(Terminal.HEIGHT):
+                if self.top + i < len(self.text):
+                    if self.top + i == self.cursor:
+                        sys.stdout.write('\u001b[37;1m')
+                        sys.stdout.write(self.text[self.top+i])
+                        sys.stdout.write('\u001b[0m\r\n')
+                    else:
+                        sys.stdout.write(self.text[self.top+i] + '\r\n')
+
+            for i in range(self.top + Terminal.HEIGHT - len(self.text)):
+                sys.stdout.write('\r\n')
+
+    def refresh(self):
+        self.clear()
+        self.print_text()
+
+    def set_text(self, text):
+        with self.lock:
+            self.text = text
+        self.refresh()
+
+    def scroll(self, n):
+        with self.lock:
+            if self.top + n < len(self.text) and self.top + n >= 0:
+                self.top += n
+                self.refresh()
+
+    def loop(self):
+        # self.drawloop()
+        self.print_text()
+
+        def _loop():
+            while True:
+                ch = sys.stdin.read(1)
+                self.global_events.set((Terminal.KEYPRESS, ord(ch)))
+
+        threading.Thread(target=_loop, daemon=True).start()
 
     def drawloop(self):
         def _callback(events):
@@ -54,11 +92,12 @@ class Terminal:
 
                 with self.lock:
                     if self.alive:
-                        if e == Terminal.KEYPRESS:
-                            self.text.append(str(v))
-                            if len(self.text) > Terminal.HEIGHT:
-                                self.cy += 1
+                        # if e == Terminal.KEYPRESS:
+                        #     self.text.append(str(v))
+                        #     if len(self.text) > Terminal.HEIGHT:
+                        #         self.top += 1
 
+                        if e == Terminal.REFRESH:
                             self.clear()
                             self.print_text()
 
@@ -70,12 +109,3 @@ class Terminal:
 
         threading.Thread(target=_loop, daemon=True).start()
 
-    def loop(self):
-        self.drawloop()
-
-        def _loop():
-            while True:
-                ch = sys.stdin.read(1)
-                self.global_events.set((Terminal.KEYPRESS, ord(ch)))
-
-        threading.Thread(target=_loop, daemon=True).start()

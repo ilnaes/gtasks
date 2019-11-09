@@ -18,10 +18,11 @@ class Terminal:
     def __init__(self, q):
         # self.local_events = EventBox()
         self.global_events = q
-        self.text = ['Loading...']
+        self.text = []
         self.top = 0
         self.cursor = 0
         self.input = ''
+        self.prompt = ''
         self.lock = threading.Lock()
         self.alive = True
 
@@ -29,10 +30,12 @@ class Terminal:
         self.old_settings = termios.tcgetattr(self.fd)
         tty.setraw(sys.stdin)
         csi('s')
+        csi('?25l')
 
     def kill(self):
         with self.lock:
             termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
+            csi('?25h')
             self.clear()
             self.alive = False
 
@@ -59,6 +62,8 @@ class Terminal:
             for i in range(self.top + Terminal.HEIGHT - len(self.text)):
                 sys.stdout.write('\r\n')
 
+            sys.stdout.write(self.prompt + self.input + '\r\n')
+
     def refresh(self):
         self.clear()
         self.print_text()
@@ -66,6 +71,11 @@ class Terminal:
     def set_text(self, text):
         with self.lock:
             self.text = text
+        self.refresh()
+
+    def set_input(self, s):
+        with self.lock:
+            self.input = s
         self.refresh()
 
     def scroll(self, n):

@@ -11,7 +11,7 @@ from google.auth.transport.requests import Request
 
 class Connection:
     SCOPES = ['https://www.googleapis.com/auth/tasks']
-    FORMAT = "%Y-%m-%dT%H:%M"
+    FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
     def __init__(self, q):
         self.global_events = q
@@ -40,27 +40,13 @@ class Connection:
     def get_lists(self):
         results = self.service.tasklists().list(maxResults=10).execute()
         items = results.get('items', [])
-        self.global_events.put(('ITEMS',
-                                [(x['title'], x['id']) for x in items]))
+        self.global_events.put(('LISTS',
+                                [[x['title'], x['id'], None] for x in items]))
 
-    def list_tasks():
-        # Call the Tasks API
-
-        for item in items:
-            print(u'{0}'.format(item['title']))
-            res = service.tasks().list(tasklist=item['id']).execute()
-            res = res.get('items', [])
-            tasks = [(t['title'], dt.datetime.strptime(t['due'], Connection.FORMAT))
-                     for t in res]
-
-            tasks.sort(key=(lambda x: x[1]))
-
-            now = dt.datetime.now()
-
-            for t in tasks:
-                if t[1] < now:
-                    print(u'\033[31m{1} -- {0}\033[0m'.format(t[0], t[1]))
-                else:
-                    print(u'\033[32m{1} -- {0}\033[0m'.format(t[0], t[1]))
-
-        return tasks
+    def get_tasks(self, id):
+        res = self.service.tasks().list(tasklist=id).execute()
+        res = res.get('items', [])
+        tasks = [[t['title'], t['id'], dt.datetime.strptime(t['due'], Connection.FORMAT)]
+                 for t in res]
+        tasks.sort(key=(lambda x: x[2]))
+        self.global_events.put(('TASKS', (id, tasks)))

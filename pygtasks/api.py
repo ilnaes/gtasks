@@ -40,7 +40,7 @@ class Connection:
     def add_task(self, tasklist, task):
         results = self.service.tasks().insert(tasklist=tasklist, body=task).execute()
         return results['id']
-    
+
     def complete_task(self, tasklist, taskid):
         task = self.service.tasks().get(tasklist=tasklist, task=taskid).execute()
         task['status'] = 'completed'

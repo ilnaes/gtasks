@@ -1,8 +1,8 @@
 from queue import Queue
 import re
 import datetime
-from tui import Terminal
-from api import Connection
+from .tui import Terminal
+from .api import Connection
 
 
 class GTasks:
@@ -16,11 +16,11 @@ class GTasks:
         self.connexion.get_lists()
         self.terminal.loop()
 
-        self.state = []
+        self.lists = []
 
     def get_list(self):
         i = 0
-        for x in self.state:
+        for x in self.lists:
             _, _, tasks = x
             N = len(tasks) if tasks else 0
             if self.cursor >= i and self.cursor < i + N + 1:
@@ -73,7 +73,7 @@ class GTasks:
             task['notes'] = m
 
         res = self.connexion.add_task(self.get_list()[1], task)
-        for _, x, l in self.state:
+        for _, x, l in self.lists:
             if x == self.get_list()[1]:
                 if l is not None:
                     l.append([task['title'], res, ts])
@@ -85,7 +85,7 @@ class GTasks:
         res = []
         now = datetime.datetime.now()
 
-        for t, _, l in self.state:
+        for t, _, l in self.lists:
             if l is None:
                 res.append('+ ' + t)
             else:
@@ -112,6 +112,10 @@ class GTasks:
         nottask, task = self.get_item()
 
         if not nottask:
+            text = self.parse_state()
+            text[self.cursor] += ' ✓'
+            self.terminal.set_text(text)
+
             tasklist = self.get_list()
             _, x, _ = task
             self.connexion.complete_task(tasklist[1], x)
@@ -125,7 +129,7 @@ class GTasks:
 
     def get_item(self):
         i = 0
-        for x in self.state:
+        for x in self.lists:
             if self.cursor == i:
                 return True, x
 
@@ -138,8 +142,8 @@ class GTasks:
                     i += 1
 
     def get_length(self):
-        res = len(self.state)
-        for _, _, x in self.state:
+        res = len(self.lists)
+        for _, _, x in self.lists:
             res += 0 if x is None else len(x)
         return res
 
@@ -159,10 +163,10 @@ class GTasks:
     def process_events(self, event):
         e, v = event
         if e == 'LISTS':
-            self.state = v
+            self.lists = v
             self.terminal.set_text(self.parse_state())
         elif e == 'TASKS':
-            for l in self.state:
+            for l in self.lists:
                 if l[1] == v[0]:
                     l[2] = v[1]
             self.terminal.set_text(self.parse_state())
@@ -170,19 +174,18 @@ class GTasks:
             if v == 3 or v == 113:
                 self.alive = False
                 self.terminal.kill()
-            elif v == 10:
+            elif v == 106:
                 self.scroll_cursor(1)
-            elif v == 11:
+            elif v == 107:
                 self.scroll_cursor(-1)
             elif v == 32:
                 self.toggle_list()
             elif v == 97:
                 self.add_task()
-            elif v == 99:
+            elif v == 120:
                 self.complete_task()
-            else:
-                self.terminal.text.append(str(v))
-                self.terminal.refresh()
+            # else:
+            #     self.terminal.refresh()
                 # self.terminal.set_input(str(v))
 
     def run(self):

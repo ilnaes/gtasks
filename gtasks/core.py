@@ -1,5 +1,6 @@
 from queue import Queue
-import datetime as dt
+import re
+import datetime
 from tui import Terminal
 from api import Connection
 
@@ -17,9 +18,72 @@ class GTasks:
 
         self.state = []
 
+    def get_list(self):
+        i = 0
+        for x in self.state:
+            _, _, tasks = x
+            N = len(tasks) if tasks else 0
+            if self.cursor >= i and self.cursor < i + N + 1:
+                return x
+
+            i += N + 1
+
+    def add_task(self):
+        task = {}
+        m = None
+        while not m:
+            m = self.terminal.get_prompt("Input title: ", self.q)
+            if m is None:
+                return
+            task['title'] = m
+
+        m = None
+        while not m:
+            a = self.terminal.get_prompt("Input date (MM/DD/YYYY): ", self.q)
+            if a is None:
+                return
+
+            m = re.search(r'^([0-9]{1,2})/([0-9]{1,2})/([0-9]{4})$', a)
+            try:
+                ts = datetime.datetime(int(m.group(3)), int(m.group(1)), int(m.group(2)))
+            except:
+                m = None
+
+        m = None
+        while m is None:
+            m = self.terminal.get_prompt("(Optional) Input time (HH:MM am/pm): ", self.q)
+            if m is None:
+                return
+
+            if m != '':
+                m = re.search(r'^(0[0-9]|1[0-9]|2[0-3]|[0-9]):([0-5][0-9])\s*(AM|am|PM|pm)$', m)
+                try:
+                    hours = int(m.group(1)) + (0 if m.group(3) in ['AM', 'am'] else 12)
+                    ts += datetime.timedelta(hours=hours, minutes=int(m.group(2)))
+                except:
+                    m = None
+
+        task['due'] = ts.isoformat() + '.000Z'
+
+        m = None
+        while m is None:
+            m = self.terminal.get_prompt("(Optional) Input notes: ", self.q)
+            if m is None:
+                return
+            task['notes'] = m
+
+        res = self.connexion.add_task(self.get_list()[1], task)
+        for _, x, l in self.state:
+            if x == self.get_list()[1]:
+                if l is not None:
+                    l.append([task['title'], res, ts])
+                    l.sort(key=(lambda x: x[2]))
+                    self.terminal.set_text(self.parse_state())
+                break
+
     def parse_state(self):
         res = []
-        now = dt.datetime.now()
+        now = datetime.datetime.now()
 
         for t, _, l in self.state:
             if l is None:
@@ -43,6 +107,21 @@ class GTasks:
         if self.cursor + n >= 0 and self.cursor + n < self.get_length():
             self.cursor += n
             self.terminal.scroll_cursor(n)
+
+    def complete_task(self):
+        nottask, task = self.get_item()
+
+        if not nottask:
+            tasklist = self.get_list()
+            _, x, _ = task
+            self.connexion.complete_task(tasklist[1], x)
+
+            for i in range(len(tasklist[2])):
+                if tasklist[2][i][1] == x:
+                    del tasklist[2][i]
+                    break
+            self.scroll_cursor(-1)
+            self.terminal.set_text(self.parse_state())
 
     def get_item(self):
         i = 0
@@ -98,11 +177,13 @@ class GTasks:
             elif v == 32:
                 self.toggle_list()
             elif v == 97:
-                a = self.terminal.get_prompt("Input title: ", self.q)
-                if a is not None:
-                    self.terminal.set_input(a)
+                self.add_task()
+            elif v == 99:
+                self.complete_task()
             else:
-                self.terminal.set_input(str(v))
+                self.terminal.text.append(str(v))
+                self.terminal.refresh()
+                # self.terminal.set_input(str(v))
 
     def run(self):
         while self.alive:

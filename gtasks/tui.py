@@ -11,7 +11,7 @@ def csi(s):
 
 class Terminal:
     KEYPRESS = 2
-    HEIGHT = 5
+    HEIGHT = 10
 
     def __init__(self, q):
         self.global_events = q
@@ -26,7 +26,6 @@ class Terminal:
         self.fd = sys.stdin.fileno()
         self.old_settings = termios.tcgetattr(self.fd)
         tty.setraw(sys.stdin)
-        # csi('s')
         csi('?25l')
 
     def get_prompt(self, s, q):
@@ -48,6 +47,9 @@ class Terminal:
                     self.prompt = ''
                     self.refresh()
                     return tmp
+                elif v == 127:
+                    self.input = self.input[:-1]
+                    self.refresh()
                 elif chr(v) in string.printable:
                     self.input += chr(v)
                     self.refresh()

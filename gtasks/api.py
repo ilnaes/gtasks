@@ -1,7 +1,7 @@
 from __future__ import print_function
 import pickle
 import os.path
-import datetime as dt
+from datetime import datetime
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -37,6 +37,17 @@ class Connection:
 
         self.service = build('tasks', 'v1', credentials=creds)
 
+    def add_task(self, tasklist, task):
+        results = self.service.tasks().insert(tasklist=tasklist, body=task).execute()
+        return results['id']
+    
+    def complete_task(self, tasklist, taskid):
+        task = self.service.tasks().get(tasklist=tasklist, task=taskid).execute()
+        task['status'] = 'completed'
+
+        result = self.service.tasks().update(tasklist=tasklist, task=taskid, body=task).execute()
+        return result['completed']
+
     def get_lists(self):
         results = self.service.tasklists().list(maxResults=10).execute()
         items = results.get('items', [])
@@ -44,9 +55,9 @@ class Connection:
                                 [[x['title'], x['id'], None] for x in items]))
 
     def get_tasks(self, id):
-        res = self.service.tasks().list(tasklist=id).execute()
+        res = self.service.tasks().list(tasklist=id, showCompleted=False).execute()
         res = res.get('items', [])
-        tasks = [[t['title'], t['id'], dt.datetime.strptime(t['due'], Connection.FORMAT)]
+        tasks = [[t['title'], t['id'], datetime.strptime(t['due'], Connection.FORMAT)]
                  for t in res]
         tasks.sort(key=(lambda x: x[2]))
         self.global_events.put(('TASKS', (id, tasks)))

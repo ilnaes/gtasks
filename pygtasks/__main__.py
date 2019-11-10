@@ -1,4 +1,4 @@
-from .core import GTasks
+from .core import PygTasks
 
-app = GTasks()
+app = PygTasks()
 app.run()

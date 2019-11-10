@@ -2,10 +2,10 @@ from queue import Queue
 import re
 import datetime
 from .tui import Terminal
-from .api import Connection
+from .service import Connection
 
 
-class GTasks:
+class PygTasks:
     def __init__(self):
         self.alive = True
         self.q = Queue()
@@ -19,6 +19,8 @@ class GTasks:
         self.lists = []
 
     def get_list(self):
+        """ Gets the tasklist that the cursor is in """
+
         i = 0
         for x in self.lists:
             _, _, tasks = x
@@ -194,5 +196,5 @@ class GTasks:
 
 
 if __name__ == '__main__':
-    app = GTasks()
+    app = PygTasks()
     app.run()

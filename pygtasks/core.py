@@ -198,8 +198,3 @@ class PygTasks:
     def run(self):
         while self.alive:
             self.process_events(self.q.get())
-
-
-if __name__ == '__main__':
-    app = PygTasks()
-    app.run()

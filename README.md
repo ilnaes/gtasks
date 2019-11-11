@@ -4,7 +4,7 @@ This is a simple command line application for Google Tasks.  You can view, creat
 
 # Usage
 
-* `j/k` for navigating down/up respectively
+* `j/k` to navigate down/up respectively
 * `<Space>` to expand/contract a tasklist
 * `c` to complete a highlighted task
 * `x` to delete a highlighted task

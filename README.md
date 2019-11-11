@@ -2,7 +2,7 @@
 
 This is a simple command line application for Google Tasks.  You can view, create, complete, and delete tasks in your tasklists.
 
-#Installation
+# Installation
 
 You'll need setuptools, which you get get from pip.  Once you have that, type the following in the main directory
 

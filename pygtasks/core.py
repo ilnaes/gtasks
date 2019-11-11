@@ -6,11 +6,12 @@ from .service import Connection
 
 
 class PygTasks:
-    def __init__(self):
+    def __init__(self, cred_json=None):
+
         self.alive = True
         self.q = Queue()
+        self.connexion = Connection(self.q, cred_json)
         self.terminal = Terminal(self.q)
-        self.connexion = Connection(self.q)
         self.cursor = 0
 
         self.connexion.get_lists()
@@ -32,15 +33,17 @@ class PygTasks:
 
     def add_task(self):
         task = {}
+
+        # could be streamlined
         m = None
         while not m:
             m = self.terminal.get_prompt("Input title: ", self.q)
             if m is None:
                 return
-            task['title'] = m
+        task['title'] = m
 
         m = None
-        while not m:
+        while m is None:
             a = self.terminal.get_prompt("Input date (MM/DD/YYYY): ", self.q)
             if a is None:
                 return
@@ -67,12 +70,10 @@ class PygTasks:
 
         task['due'] = ts.isoformat() + '.000Z'
 
-        m = None
-        while m is None:
-            m = self.terminal.get_prompt("(Optional) Input notes: ", self.q)
-            if m is None:
-                return
-            task['notes'] = m
+        m = self.terminal.get_prompt("(Optional) Input notes: ", self.q)
+        if m is None:
+            return
+        task['notes'] = m
 
         res = self.connexion.add_task(self.get_list()[1], task)
         for _, x, l in self.lists:
@@ -110,23 +111,25 @@ class PygTasks:
             self.cursor += n
             self.terminal.scroll_cursor(n)
 
-    def complete_task(self):
+    def remove_task(self, complete):
         nottask, task = self.get_item()
 
         if not nottask:
             text = self.parse_state()
-            text[self.cursor] += ' ✓'
+            text[self.cursor] += ' ✓' if complete else ' ✗'
             self.terminal.set_text(text)
 
             tasklist = self.get_list()
             _, x, _ = task
-            self.connexion.complete_task(tasklist[1], x)
+            self.connexion.remove_task(tasklist[1], x, complete)
 
             for i in range(len(tasklist[2])):
                 if tasklist[2][i][1] == x:
                     del tasklist[2][i]
                     break
-            self.scroll_cursor(-1)
+
+            if len(self.parse_state()) <= self.cursor:
+                self.scroll_cursor(-1)
             self.terminal.set_text(self.parse_state())
 
     def get_item(self):
@@ -184,8 +187,10 @@ class PygTasks:
                 self.toggle_list()
             elif v == 97:
                 self.add_task()
+            elif v == 99:
+                self.remove_task(True)
             elif v == 120:
-                self.complete_task()
+                self.remove_task(False)
             # else:
             #     self.terminal.refresh()
                 # self.terminal.set_input(str(v))

@@ -64,6 +64,13 @@ class Connection:
         results = self.service.tasks().insert(tasklist=tasklist, body=task).execute()
         return results['id']
 
+    def add_list(self, tasklist):
+        results = self.service.tasklists().insert(body=tasklist).execute()
+        return results['id']
+
+    def remove_list(self, tasklist):
+        self.service.tasklists().delete(tasklist=tasklist).execute()
+
     def remove_task(self, tasklist, taskid, complete):
         if complete:
             task = self.service.tasks().get(tasklist=tasklist, task=taskid).execute()

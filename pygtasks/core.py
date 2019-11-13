@@ -31,13 +31,23 @@ class PygTasks:
 
             i += N + 1
 
+    def add_list(self):
+        m = None
+        while not m:
+            m = self.terminal.get_prompt("Input list title: ", self.q)
+            if m is None:
+                return
+        res = self.connexion.add_list({'title': m})
+        self.lists.append([m, res, None])
+        self.terminal.set_text(self.parse_state())
+
     def add_task(self):
         task = {}
 
         # could be streamlined
         m = None
         while not m:
-            m = self.terminal.get_prompt("Input title: ", self.q)
+            m = self.terminal.get_prompt("Input task title: ", self.q)
             if m is None:
                 return
         task['title'] = m
@@ -110,6 +120,37 @@ class PygTasks:
         if self.cursor + n >= 0 and self.cursor + n < self.get_length():
             self.cursor += n
             self.terminal.scroll_cursor(n)
+
+    def delete(self):
+        nottask, tasklist = self.get_item()
+        if not nottask:
+            self.remove_task(False)
+        else:
+            name, listid, _ = tasklist
+
+            m = None
+            while not m:
+                m = self.terminal.get_prompt('Are you sure you want to delete ' + name + ' (y/n)? ', self.q)
+                if m is None:
+                    return
+                if m not in 'yYnN':
+                    m = None
+
+            text = self.parse_state()
+            text[self.cursor] += ' ✗'
+            self.terminal.set_text(text)
+
+            self.connexion.remove_list(listid)
+            for i in range(len(self.lists)):
+                _, x, _ = self.lists[i]
+                if x == listid:
+                    del self.lists[i]
+                    break
+
+            if len(self.parse_state()) <= self.cursor:
+                self.scroll_cursor(-1)
+            self.terminal.set_text(self.parse_state())
+
 
     def remove_task(self, complete):
         nottask, task = self.get_item()
@@ -185,12 +226,14 @@ class PygTasks:
                 self.scroll_cursor(-1)
             elif v == 32:
                 self.toggle_list()
-            elif v == 97:
+            elif v == 116:
                 self.add_task()
+            elif v == 108:
+                self.add_list()
             elif v == 99:
                 self.remove_task(True)
             elif v == 120:
-                self.remove_task(False)
+                self.delete()
             # else:
             #     self.terminal.refresh()
                 # self.terminal.set_input(str(v))

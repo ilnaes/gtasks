@@ -10,12 +10,8 @@ if os.path.isfile(requirementPath):
     with open(requirementPath) as f:
         install_requires = f.read().splitlines()
 
-setup(
-    name='pygtasks',
-    version='0.1.0',
-    packages=['pygtasks'],
-    install_requires=install_requires,
-    entry_points={
-        'console_scripts': ['pygtasks = pygtasks.__main__:main']
-    }
-)
+setup(name='pygtasks',
+      version='0.1.0',
+      packages=['pygtasks'],
+      install_requires=install_requires,
+      entry_points={'console_scripts': ['pygtasks = pygtasks.__main__:main']})

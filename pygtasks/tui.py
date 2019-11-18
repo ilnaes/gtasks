@@ -6,7 +6,7 @@ import threading
 
 
 def csi(s):
-    sys.stdout.write('\x1b['+s)
+    sys.stdout.write('\x1b[' + s)
 
 
 class Terminal:
@@ -81,10 +81,10 @@ class Terminal:
                 if self.top + i < len(self.text):
                     if self.top + i == self.cursor:
                         sys.stdout.write('\u001b[37;1m')
-                        sys.stdout.write(self.text[self.top+i])
+                        sys.stdout.write(self.text[self.top + i])
                         sys.stdout.write('\u001b[0m\r\n')
                     else:
-                        sys.stdout.write(self.text[self.top+i] + '\r\n')
+                        sys.stdout.write(self.text[self.top + i] + '\r\n')
 
             for i in range(self.top + Terminal.HEIGHT - len(self.text)):
                 sys.stdout.write('\r\n')
@@ -145,4 +145,3 @@ class Terminal:
                 self.local_events.wait(_callback)
 
         threading.Thread(target=_loop, daemon=True).start()
-

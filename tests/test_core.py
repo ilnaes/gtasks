@@ -11,7 +11,6 @@ def sleep():
 
 
 class TestCore(unittest.TestCase):
-
     @patch('pygtasks.core.Connection')
     @patch('pygtasks.core.Terminal')
     def setUp(self, mox_terminal, mox_cxn):
@@ -22,7 +21,9 @@ class TestCore(unittest.TestCase):
         pass
 
     def test_start(self):
-        """ Verify app's lists properly initializes """
+        """
+        Verify app's lists properly initializes
+        """
 
         lists = [['', 'a', None], ['qiwe', 's', None], ['aa', 'c', None]]
         self.app.q.put(('LISTS', lists))
@@ -30,7 +31,9 @@ class TestCore(unittest.TestCase):
         self.assertEqual(self.app.get_length(), 3)
 
     def test_tasks(self):
-        """ Verify adding tasks adds the right amount """
+        """
+        Verify adding tasks adds the right amount
+        """
         lists = [['', 'a', None], ['qiwe', 's', None], ['aa', 'c', None]]
         task1 = [['', '', datetime.now()], ['', '', datetime.now()]]
         task2 = [['', '', datetime.now()]]
@@ -49,11 +52,14 @@ class TestCore(unittest.TestCase):
 
         self.app.q.put(('TASKS', ('s', task2)))
         sleep()
-        self.assertEqual(len(self.app.parse_state()), len(lists) + len(task1) + len(task2))
+        self.assertEqual(len(self.app.parse_state()),
+                         len(lists) + len(task1) + len(task2))
         self.assertEqual(self.app.lists[1][2], task2)
 
     def test_cursor(self):
-        """ Verify cursor stay in bounds """
+        """
+        Verify cursor stay in bounds
+        """
 
         lists = [['', 'as', None], ['qiwe', 'asd', None], ['aa', 'q23', None]]
         self.app.q.put(('LISTS', lists))
@@ -69,3 +75,40 @@ class TestCore(unittest.TestCase):
 
         sleep()
         self.assertEqual(self.app.cursor, 0)
+
+    def test_get(self):
+        """
+        Verify get ops work
+        """
+
+        lists = [['', 'as', None], ['qiwe', 'asd', None], ['aa', 'q23', None]]
+        self.app.q.put(('LISTS', lists))
+        sleep()
+
+        isList, x = self.app.get_item()
+
+        self.assertTrue(isList)
+        self.assertEqual(x[1], lists[0][1])
+
+        self.app.scroll_cursor(1)
+        isList, x = self.app.get_item()
+
+        self.assertTrue(isList)
+        self.assertEqual(x[1], lists[1][1])
+
+        task1 = [['', 'x', datetime.now()], ['', '', datetime.now()]]
+
+        self.app.q.put(('TASKS', (lists[1][1], task1)))
+        sleep()
+
+        isList, x = self.app.get_item()
+
+        self.assertTrue(isList)
+        self.assertEqual(x[1], lists[1][1])
+
+        self.app.scroll_cursor(1)
+
+        isList, x = self.app.get_item()
+
+        self.assertFalse(isList)
+        self.assertEqual(x[1], task1[0][1])

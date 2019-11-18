@@ -37,6 +37,7 @@ class PygTasks:
             m = self.terminal.get_prompt("Input list title: ", self.q)
             if m is None:
                 return
+
         res = self.connexion.add_list({'title': m})
         self.lists.append([m, res, None])
         self.terminal.set_text(self.parse_state())
@@ -60,21 +61,27 @@ class PygTasks:
 
             m = re.search(r'^([0-9]{1,2})/([0-9]{1,2})/([0-9]{4})$', a)
             try:
-                ts = datetime.datetime(int(m.group(3)), int(m.group(1)), int(m.group(2)))
+                ts = datetime.datetime(int(m.group(3)), int(m.group(1)),
+                                       int(m.group(2)))
             except:
                 m = None
 
         m = None
         while m is None:
-            m = self.terminal.get_prompt("(Optional) Input time (HH:MM am/pm): ", self.q)
+            m = self.terminal.get_prompt(
+                "(Optional) Input time (HH:MM am/pm): ", self.q)
             if m is None:
                 return
 
             if m != '':
-                m = re.search(r'^(0[0-9]|1[0-9]|2[0-3]|[0-9]):([0-5][0-9])\s*(AM|am|PM|pm)$', m)
+                m = re.search(
+                    r'^(0[0-9]|1[0-9]|2[0-3]|[0-9]):([0-5][0-9])\s*(AM|am|PM|pm)$',
+                    m)
                 try:
-                    hours = int(m.group(1)) + (0 if m.group(3) in ['AM', 'am'] else 12)
-                    ts += datetime.timedelta(hours=hours, minutes=int(m.group(2)))
+                    hours = int(
+                        m.group(1)) + (0 if m.group(3) in ['AM', 'am'] else 12)
+                    ts += datetime.timedelta(hours=hours,
+                                             minutes=int(m.group(2)))
                 except:
                     m = None
 
@@ -130,7 +137,9 @@ class PygTasks:
 
             m = None
             while not m:
-                m = self.terminal.get_prompt('Are you sure you want to delete ' + name + ' (y/n)? ', self.q)
+                m = self.terminal.get_prompt(
+                    'Are you sure you want to delete ' + name + ' (y/n)? ',
+                    self.q)
                 if m is None:
                     return
                 if m not in 'yYnN':
@@ -150,7 +159,6 @@ class PygTasks:
             if len(self.parse_state()) <= self.cursor:
                 self.scroll_cursor(-1)
             self.terminal.set_text(self.parse_state())
-
 
     def remove_task(self, complete):
         nottask, task = self.get_item()
@@ -236,7 +244,7 @@ class PygTasks:
                 self.delete()
             # else:
             #     self.terminal.refresh()
-                # self.terminal.set_input(str(v))
+            # self.terminal.set_input(str(v))
 
     def run(self):
         while self.alive:

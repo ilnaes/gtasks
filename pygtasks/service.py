@@ -61,7 +61,8 @@ class Connection:
         self.service = build('tasks', 'v1', credentials=creds)
 
     def add_task(self, tasklist, task):
-        results = self.service.tasks().insert(tasklist=tasklist, body=task).execute()
+        results = self.service.tasks().insert(tasklist=tasklist,
+                                              body=task).execute()
         return results['id']
 
     def add_list(self, tasklist):
@@ -73,23 +74,30 @@ class Connection:
 
     def remove_task(self, tasklist, taskid, complete):
         if complete:
-            task = self.service.tasks().get(tasklist=tasklist, task=taskid).execute()
+            task = self.service.tasks().get(tasklist=tasklist,
+                                            task=taskid).execute()
             task['status'] = 'completed'
 
-            self.service.tasks().update(tasklist=tasklist, task=taskid, body=task).execute()
+            self.service.tasks().update(tasklist=tasklist,
+                                        task=taskid,
+                                        body=task).execute()
         else:
-            self.service.tasks().delete(tasklist=tasklist, task=taskid).execute()
+            self.service.tasks().delete(tasklist=tasklist,
+                                        task=taskid).execute()
 
     def get_lists(self):
         results = self.service.tasklists().list(maxResults=10).execute()
         items = results.get('items', [])
-        self.global_events.put(('LISTS',
-                                [[x['title'], x['id'], None] for x in items]))
+        self.global_events.put(
+            ('LISTS', [[x['title'], x['id'], None] for x in items]))
 
     def get_tasks(self, id):
-        res = self.service.tasks().list(tasklist=id, showCompleted=False).execute()
+        res = self.service.tasks().list(tasklist=id,
+                                        showCompleted=False).execute()
         res = res.get('items', [])
-        tasks = [[t['title'], t['id'], datetime.strptime(t['due'], Connection.FORMAT)]
-                 for t in res]
+        tasks = [[
+            t['title'], t['id'],
+            datetime.strptime(t['due'], Connection.FORMAT)
+        ] for t in res]
         tasks.sort(key=(lambda x: x[2]))
         self.global_events.put(('TASKS', (id, tasks)))

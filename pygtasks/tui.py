@@ -121,27 +121,3 @@ class Terminal:
                 self.global_events.put((Terminal.KEYPRESS, ord(ch)))
 
         threading.Thread(target=_loop, daemon=True).start()
-
-    def drawloop(self):
-        def _callback(events):
-            while events:
-                e, v = events.pop()
-
-                with self.lock:
-                    if self.alive:
-                        # if e == Terminal.KEYPRESS:
-                        #     self.text.append(str(v))
-                        #     if len(self.text) > Terminal.HEIGHT:
-                        #         self.top += 1
-
-                        if e == Terminal.REFRESH:
-                            self.clear()
-                            self.print_text()
-
-        def _loop():
-            self.print_text()
-
-            while True:
-                self.local_events.wait(_callback)
-
-        threading.Thread(target=_loop, daemon=True).start()

@@ -93,8 +93,8 @@ class PygTasks:
         task['notes'] = m
 
         res = self.connexion.add_task(self.get_list()[1], task)
-        for _, x, l in self.lists:
-            if x == self.get_list()[1]:
+        for _, id, l in self.lists:
+            if id == self.get_list()[1]:
                 if l is not None:
                     l.append([task['title'], res, ts])
                     l.sort(key=(lambda x: x[2]))
@@ -105,18 +105,20 @@ class PygTasks:
         res = []
         now = datetime.datetime.now()
 
-        for t, _, l in self.lists:
+        for ltitle, _, l in self.lists:
             if l is None:
-                res.append('+ ' + t)
+                res.append('+ ' + ltitle)
             else:
-                res.append('- ' + t)
-                for y, _, d in l:
-                    dfmt = d.strftime('%m/%d/%Y')
+                res.append('- ' + ltitle)
+                for ttitle, _, dt in l:
+                    dfmt = dt.strftime('%m/%d/%Y')
 
-                    if d < now:
-                        line = u'  \033[31m{0} -- {1}\033[0m'.format(dfmt, y)
+                    if dt < now:
+                        line = u'  \033[31m{0} -- {1}\033[0m'.format(
+                            dfmt, ttitle)
                     else:
-                        line = u'  \033[32m{0} -- {1}\033[0m'.format(dfmt, y)
+                        line = u'  \033[32m{0} -- {1}\033[0m'.format(
+                            dfmt, ttitle)
 
                     res.append(line)
                     # res.append('  ' + y)
@@ -151,8 +153,8 @@ class PygTasks:
 
             self.connexion.remove_list(listid)
             for i in range(len(self.lists)):
-                _, x, _ = self.lists[i]
-                if x == listid:
+                _, id, _ = self.lists[i]
+                if id == listid:
                     del self.lists[i]
                     break
 
@@ -169,11 +171,11 @@ class PygTasks:
             self.terminal.set_text(text)
 
             tasklist = self.get_list()
-            _, x, _ = task
-            self.connexion.remove_task(tasklist[1], x, complete)
+            _, id, _ = task
+            self.connexion.remove_task(tasklist[1], id, complete)
 
             for i in range(len(tasklist[2])):
-                if tasklist[2][i][1] == x:
+                if tasklist[2][i][1] == id:
                     del tasklist[2][i]
                     break
 
@@ -183,22 +185,22 @@ class PygTasks:
 
     def get_item(self):
         i = 0
-        for x in self.lists:
+        for l in self.lists:
             if self.cursor == i:
-                return True, x
+                return True, l
 
             i += 1
-            _, _, desc = x
+            _, _, desc = l
             if desc is not None:
-                for y in desc:
+                for task in desc:
                     if self.cursor == i:
-                        return False, y
+                        return False, task
                     i += 1
 
     def get_length(self):
         res = len(self.lists)
-        for _, _, x in self.lists:
-            res += 0 if x is None else len(x)
+        for _, _, l in self.lists:
+            res += 0 if l is None else len(l)
         return res
 
     def toggle_list(self):

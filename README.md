@@ -13,7 +13,7 @@ python setup.py install
 # Usage
 
 ```sh
-pygtasks [ credentials_path ]
+pygtasks [ credentials.json ]
 ```
 
 The first time you use pygtasks, you must supply it with the path of your credentials json file (you can search for ways to get that).  You will be taken through the Google API authentication process on a browser, which will write your token in ~/.pyenv afterwards.  In subsequent launches, you will not need to provide any arguments.

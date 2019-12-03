@@ -214,7 +214,7 @@ class PygTasks:
                 self.terminal.set_text(self.parse_state())
         else:
             self.terminal.input = item[0]
-            self.terminal.refresh()
+            self.terminal.refresh(False)
 
     def process_events(self, event):
         e, v = event

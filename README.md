@@ -2,7 +2,7 @@
 
 This is a simple terminal application for Google Tasks.  You can view, create, complete, and delete tasks in your tasklists.
 
-![Pygtasks demo](https://raw.githubusercontent.com/ilnaes/i/master/pygtasks-demo.gif)
+<img src="https://raw.githubusercontent.com/ilnaes/i/master/pygtasks-demo.gif" width=640>
 
 # Installation
 
